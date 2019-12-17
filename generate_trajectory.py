@@ -1,3 +1,4 @@
+import argparse
 import pickle
 
 import matplotlib.pyplot as plt
@@ -42,45 +43,48 @@ def main():
     n_timesteps = 30
 
     plt.figure()
-    gesture_names = ["call_me"]
+    gesture_name = args.gesture_name
+    gesture_yes = labels == gesture_name
+    dynamics_model = dynamics_dict[gesture_name]
+    X_generated_list = []
+    X_first = X_current[gesture_yes & first_yes]
+    idx = np.random.choice(X_first.shape[0], 1)
 
-    for gesture_idx, gesture_name in enumerate(gesture_names):
-        gesture_yes = labels == gesture_name
-        dynamics_model = dynamics_dict[gesture_name]
-        X_generated_list = []
-        X_first = X_current[gesture_yes & first_yes]
-        idx = np.random.choice(X_first.shape[0], 1)
+    speeds = [0.5, 1.0, 1.5]
+    for i, speed in enumerate(speeds):
+        s = X_first[idx]
+        s += np.random.normal(0, 1e-1, s.shape)
+        X_generated = generate_trajectory(s, dynamics_model, n_timesteps, speed)
+        X_generated_list.append(X_generated)
 
-        speeds = [0.5, 1.0, 1.5]
-        for i, speed in enumerate(speeds):
-            s = X_first[idx]
-            s += np.random.normal(0, 1e-1, s.shape)
-            X_generated = generate_trajectory(s, dynamics_model, n_timesteps, speed)
-            X_generated_list.append(X_generated)
+        Z_generated = compressor.transform(X_generated)
+        plt.scatter(Z_generated[:, 0], Z_generated[:, 1], alpha=0.5, color="C{:d}".format(i),
+                    label="Speed={:.2f}".format(speed))
+        for current, next in zip(Z_generated, Z_generated[1:]):
+            delta = next - current
+            plt.arrow(current[0], current[1], delta[0], delta[1], color="C{:d}".format(i), alpha=0.5, width=0.05,
+                      length_includes_head=True)
 
-            Z_generated = compressor.transform(X_generated)
-            plt.scatter(Z_generated[:, 0], Z_generated[:, 1], alpha=0.5, color="C{:d}".format(i),
-                        label="Speed={:.2f}".format(speed))
-            for current, next in zip(Z_generated, Z_generated[1:]):
-                delta = next - current
-                plt.arrow(current[0], current[1], delta[0], delta[1], color="C{:d}".format(i), alpha=0.5, width=0.05,
-                          length_includes_head=True)
+        with open("./data/{:s}_generated_{:.2f}.pkl".format(gesture_name, speed), "wb") as f:
+            pickle.dump(scaler.inverse_transform(X_generated), f)
 
-            with open("./data/{:s}_generated_{:.2f}.pkl".format(gesture_name, speed), "wb") as f:
-                pickle.dump(scaler.inverse_transform(X_generated), f)
+    plt.title("Synthetic trajectories of gesture \"{:s}\"".format(gesture_name))
+    plt.legend()
+    plt.show()
 
-        plt.title("Synthetic trajectories of gesture \"{:s}\"".format(gesture_name))
-        plt.legend()
-        plt.show()
-
-        fig, axes = plt.subplots(nrows=len(speeds), ncols=1)
-        for X_generated, ax, speed in zip(X_generated_list, axes, speeds):
-            _, n_features = X_generated.shape
-            for j in range(n_features):
-                ax.plot(X_generated[:, j])
-            ax.set_title("Speed={:.2f}".format(speed))
-        plt.show()
+    fig, axes = plt.subplots(nrows=len(speeds), ncols=1)
+    for X_generated, ax, speed in zip(X_generated_list, axes, speeds):
+        _, n_features = X_generated.shape
+        for j in range(n_features):
+            ax.plot(X_generated[:, j])
+        ax.set_title("Speed={:.2f}".format(speed))
+    plt.show()
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gesture_name", type=str, required=True)
+
+    args = parser.parse_args()
+
     main()
