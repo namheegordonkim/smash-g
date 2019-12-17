@@ -29,7 +29,7 @@ Also, an installation of Docker or Singularity is recommended.
 
 ### Step 3: Preprocess data
 
-You can download our video data here.
+You can download our video data here: https://www.dropbox.com/s/ep8jhys2ie4kjda/smash-g-data.zip?dl=0
 
 To process all the data in one command, run this inside a bash shell:
 
