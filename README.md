@@ -26,6 +26,7 @@ Also, an installation of Docker or Singularity is recommended.
 * We provide the Dockerfile used inside the hand3d subdirectory. If running Docker, `docker pull namheegordonkim/handgpu` should suffice.
 * Use `docker shell` or similar to access the files inside the container.
 * Once inside the container, run `python3 -u server.py` to listen to port 3333.
+* If needed, set up an SSH tunnel so the client running on your edge device can communicate with the remote server.
 
 ### Step 3: Preprocess data
 
